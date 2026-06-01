@@ -1,0 +1,18 @@
+# 数据采集客户端配置
+
+# 服务器配置
+server:
+  url: "http://localhost:8000/api/v1"
+  timeout: 10
+
+# 采集配置
+collector:
+  collect_interval: 5  # 采集间隔（秒）
+  sync_interval: 60    # 同步间隔（秒）
+  idle_threshold: 300  # 闲置判定阈值（秒）
+
+# 自定义游戏列表
+games:
+  # 格式: 游戏名: [进程名列表]
+  # 示例:
+  # 我的游戏: ["mygame.exe", "mygame_launcher.exe"]

@@ -1,0 +1,48 @@
+# 依赖目录
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 构建产物
+frontend/dist/
+*.egg-info/
+dist/
+build/
+
+# 环境变量
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 上传文件
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# 备份文件
+backend/backups/*
+!backend/backups/.gitkeep
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
