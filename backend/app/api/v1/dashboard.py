@@ -95,7 +95,6 @@ async def get_trend_data(
     end_date = date.today()
     start_date = end_date - timedelta(days=days - 1)
     
-    # 查询每日数据
     daily_data = db.query(
         AppUsage.date,
         func.sum(AppUsage.duration).label("total_duration"),
@@ -104,7 +103,6 @@ async def get_trend_data(
         AppUsage.date <= end_date,
     ).group_by(AppUsage.date).all()
     
-    # 构建日期列表
     labels = []
     total_durations = []
     current_date = start_date
@@ -116,7 +114,6 @@ async def get_trend_data(
         total_durations.append(data_dict.get(date_str, 0))
         current_date += timedelta(days=1)
     
-    # 计算汇总
     avg_daily = sum(total_durations) / len(total_durations) if total_durations else 0
     max_duration = max(total_durations) if total_durations else 0
     max_day = labels[total_durations.index(max_duration)] if total_durations else ""
@@ -126,7 +123,6 @@ async def get_trend_data(
             "labels": labels,
             "series": {
                 "total_duration": total_durations,
-                "active_duration": total_durations,
                 "game_duration": [0] * len(labels),
             },
             "summary": {
@@ -137,3 +133,87 @@ async def get_trend_data(
             },
         }
     )
+
+
+@router.get("/usage-timeline")
+async def get_usage_timeline(
+    days: int = 7,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取使用时间线，区分应用和游戏（柱状图数据源）"""
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days - 1)
+    
+    # 应用使用按日聚合
+    app_rows = db.query(
+        AppUsage.date,
+        func.sum(AppUsage.duration).label("duration"),
+    ).filter(
+        AppUsage.date >= start_date,
+        AppUsage.date <= end_date,
+    ).group_by(AppUsage.date).all()
+    
+    # 游戏使用按日聚合
+    game_rows = db.query(
+        GameSession.date,
+        func.sum(GameSession.duration).label("duration"),
+    ).filter(
+        GameSession.date >= start_date,
+        GameSession.date <= end_date,
+    ).group_by(GameSession.date).all()
+    
+    app_dict = {str(r.date): r.duration for r in app_rows}
+    game_dict = {str(r.date): r.duration for r in game_rows}
+    
+    labels = []
+    app_durations = []
+    game_durations = []
+    current = start_date
+    while current <= end_date:
+        ds = str(current)
+        labels.append(ds)
+        app_durations.append(app_dict.get(ds, 0))
+        game_durations.append(game_dict.get(ds, 0))
+        current += timedelta(days=1)
+    
+    return success(data={
+        "labels": labels,
+        "app_usage": app_durations,
+        "game_usage": game_durations,
+    })
+
+
+@router.get("/game-breakdown")
+async def get_game_daily_breakdown(
+    target_date: str = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取游戏每日使用占比（饼图数据源）"""
+    if not target_date:
+        target_date = str(date.today())
+    
+    try:
+        parsed_date = date.fromisoformat(target_date)
+    except ValueError:
+        return success(data={"date": target_date, "games": []})
+    
+    rows = db.query(
+        Game.name,
+        func.sum(GameSession.duration).label("duration"),
+    ).join(
+        GameSession, GameSession.game_id == Game.id
+    ).filter(
+        GameSession.date == parsed_date
+    ).group_by(Game.id).order_by(
+        func.sum(GameSession.duration).desc()
+    ).all()
+    
+    return success(data={
+        "date": target_date,
+        "games": [
+            {"name": r.name, "duration": r.duration or 0}
+            for r in rows
+        ]
+    })

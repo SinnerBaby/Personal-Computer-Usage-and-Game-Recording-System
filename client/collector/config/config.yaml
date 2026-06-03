@@ -1,0 +1,15 @@
+# 采集器配置
+# 你可以在这里添加自定义游戏识别规则，或修改服务器地址
+
+# 服务器连接
+server:
+  url: "http://localhost:8000/api/v1"
+  timeout: 10
+
+# 自定义游戏（不在 game_detector.py 预设里的游戏）
+# 格式：游戏名: [进程名列表]
+# 进程名可从任务管理器中查看，区分大小写
+games:
+  # 示例：
+  # 暖雪: [WarmSnow.exe]
+  # 我的新游戏: [Game.exe, GameLauncher.exe]

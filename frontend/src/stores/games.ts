@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getGameList, getGameTags } from '@/api/games'
+import { getGameList, getGameTags, deleteGame } from '@/api/games'
+import { ElMessage } from 'element-plus'
 
 export const useGamesStore = defineStore('games', () => {
   const gameList = ref<any[]>([])
@@ -32,6 +33,19 @@ export const useGamesStore = defineStore('games', () => {
     tags.value = await getGameTags()
   }
 
+  async function removeGame(id: number): Promise<boolean> {
+    try {
+      await deleteGame(id)
+      ElMessage.success('已删除')
+      gameList.value = gameList.value.filter(g => g.id !== id)
+      pagination.value.total--
+      return true
+    } catch {
+      ElMessage.error('删除失败')
+      return false
+    }
+  }
+
   function setViewMode(mode: 'card' | 'list') {
     viewMode.value = mode
   }
@@ -44,6 +58,7 @@ export const useGamesStore = defineStore('games', () => {
     pagination,
     fetchGames,
     fetchTags,
+    removeGame,
     setViewMode,
   }
 })

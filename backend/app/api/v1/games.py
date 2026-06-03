@@ -2,10 +2,13 @@
 游戏记录 API
 """
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from datetime import date
 from typing import Optional, List
+import struct
+import io
 
 from app.database import get_db
 from app.models.user import User
@@ -65,6 +68,7 @@ async def get_game_list(
             "purchase_price": game.purchase_price,
             "purchase_date": str(game.purchase_date) if game.purchase_date else None,
             "cover_image": game.cover_image,
+            "exe_path": game.exe_path,
             "rating": game.rating,
             "notes": game.notes,
             "total_duration": game.total_duration,
@@ -125,6 +129,7 @@ async def get_game_detail(
             "purchase_price": game.purchase_price,
             "purchase_date": str(game.purchase_date) if game.purchase_date else None,
             "cover_image": game.cover_image,
+            "exe_path": game.exe_path,
             "rating": game.rating,
             "notes": game.notes,
             "total_duration": game.total_duration,
@@ -277,3 +282,113 @@ async def add_game_session(
             "date": str(session.date),
         }
     )
+
+
+@router.get("/{game_id}/icon")
+async def get_game_icon(
+    game_id: int,
+    db: Session = Depends(get_db),
+):
+    """获取游戏图标（从 exe 文件提取，使用 SHGetFileInfo）"""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game or not game.exe_path:
+        return Response(status_code=404)
+    
+    try:
+        from PIL import Image
+        import ctypes
+        import os
+        
+        exe_path = game.exe_path
+        if not os.path.isfile(exe_path):
+            return Response(status_code=404)
+        
+        shell32 = ctypes.windll.shell32
+        user32 = ctypes.windll.user32
+        gdi32 = ctypes.windll.gdi32
+        
+        # SHGetFileInfo 结构的 680 字节缓冲区
+        SHGFI_ICON = 0x000000100
+        SHGFI_LARGEICON = 0x000000000
+        
+        class SHFILEINFO(ctypes.Structure):
+            _fields_ = [
+                ("hIcon", ctypes.c_void_p),
+                ("iIcon", ctypes.c_int),
+                ("dwAttributes", ctypes.c_ulong),
+                ("szDisplayName", ctypes.c_wchar * 260),
+                ("szTypeName", ctypes.c_wchar * 80),
+            ]
+        
+        sfi = SHFILEINFO()
+        ret = shell32.SHGetFileInfoW(
+            exe_path,
+            0,
+            ctypes.byref(sfi),
+            ctypes.sizeof(sfi),
+            SHGFI_ICON | SHGFI_LARGEICON,
+        )
+        
+        if not ret or not sfi.hIcon:
+            return Response(status_code=404)
+        
+        hicon = sfi.hIcon
+        
+        # 用 GDI 绘制到 DC
+        hdc_screen = user32.GetDC(0)
+        hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
+        bmp = gdi32.CreateCompatibleBitmap(hdc_screen, 32, 32)
+        gdi32.SelectObject(hdc_mem, bmp)
+        
+        # 用较大的尺寸绘制图标，GDI 自动缩放
+        icon_size = 64
+        
+        # 创建对应大小的位图
+        bmp = gdi32.CreateCompatibleBitmap(hdc_screen, icon_size, icon_size)
+        gdi32.SelectObject(hdc_mem, bmp)
+        
+        user32.DrawIconEx(hdc_mem, 0, 0, hicon, icon_size, icon_size, 0, None, 3)
+        
+        # 读取位图数据
+        bmp_bits = ctypes.create_string_buffer(icon_size * icon_size * 4)
+        gdi32.GetBitmapBits(bmp, icon_size * icon_size * 4, bmp_bits)
+        
+        img = Image.frombuffer('RGBA', (icon_size, icon_size), bmp_bits, 'raw', 'BGRA', 0, 1)
+        
+        # 清理
+        user32.DestroyIcon(hicon)
+        gdi32.DeleteObject(bmp)
+        gdi32.DeleteDC(hdc_mem)
+        user32.ReleaseDC(0, hdc_screen)
+        
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        return Response(content=buf.getvalue(), media_type="image/png")
+        
+    except Exception as e:
+        print(f"图标提取失败: {e}")
+        return Response(status_code=404)
+
+
+@router.get("/{game_id}/cover")
+async def get_game_cover(
+    game_id: int,
+    db: Session = Depends(get_db),
+):
+    """获取游戏封面图"""
+    game = db.query(Game).filter(Game.id == game_id).first()
+    if not game or not game.cover_image:
+        return Response(status_code=404)
+    
+    import os
+    from pathlib import Path
+    
+    cover_path = Path(__file__).resolve().parent.parent.parent.parent / "data" / game.cover_image
+    if not cover_path.exists():
+        return Response(status_code=404)
+    
+    with open(cover_path, "rb") as f:
+        content = f.read()
+    
+    return Response(content=content, media_type="image/jpeg")

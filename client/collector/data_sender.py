@@ -80,6 +80,44 @@ class DataSender:
         except Exception as e:
             raise Exception(f"发送失败: {e}")
     
+    def ensure_game_exists(self, game_name: str, process_name: str = "") -> int:
+        """确保游戏在数据库中存在，返回 game_id"""
+        if not self.token:
+            raise Exception("未登录")
+        
+        try:
+            # 检查游戏是否已存在
+            params = {"name": game_name, "page": 1, "page_size": 1}
+            response = requests.get(
+                f"{self.base_url}/games",
+                params=params,
+                headers={"Authorization": f"Bearer {self.token}"},
+                timeout=self.timeout,
+            )
+            data = response.json()
+            
+            if data.get("code") == 200:
+                game_list = data.get("data", {}).get("list", [])
+                if game_list:
+                    return game_list[0]["id"]
+            
+            # 游戏不存在，创建
+            response = requests.post(
+                f"{self.base_url}/games",
+                json={
+                    "name": game_name,
+                    "notes": f"自动识别自进程 {process_name}",
+                },
+                headers={"Authorization": f"Bearer {self.token}"},
+                timeout=self.timeout,
+            )
+            data = response.json()
+            if data.get("code") == 200:
+                return data["data"]["id"]
+            return 0
+        except Exception as e:
+            raise Exception(f"创建游戏失败: {e}")
+    
     def check_connection(self) -> bool:
         """检查服务器连接"""
         try:

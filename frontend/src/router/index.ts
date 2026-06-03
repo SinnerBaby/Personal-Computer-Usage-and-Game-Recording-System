@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/auth/login.vue'),
-    meta: { requiresAuth: false },
-  },
+  // ===== 开发阶段：登录路由暂时注释 =====
+  // {
+  //   path: '/login',
+  //   name: 'Login',
+  //   component: () => import('@/views/auth/login.vue'),
+  //   meta: { requiresAuth: false },
+  // },
   {
     path: '/',
     component: () => import('@/components/layout/AppLayout.vue'),
@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/dashboard/index.vue'),
-        meta: { title: '仪表盘' },
+        meta: { title: '首页' },
       },
       {
         path: 'apps',
@@ -39,16 +39,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '游戏记录' },
       },
       {
-        path: 'games/:id',
-        name: 'GameDetail',
-        component: () => import('@/views/games/detail.vue'),
-        meta: { title: '游戏详情' },
-      },
-      {
         path: 'games/add',
         name: 'GameAdd',
         component: () => import('@/views/games/edit.vue'),
         meta: { title: '添加游戏' },
+      },
+      {
+        path: 'games/:id',
+        name: 'GameDetail',
+        component: () => import('@/views/games/detail.vue'),
+        meta: { title: '游戏详情' },
       },
       {
         path: 'games/:id/edit',
@@ -88,7 +88,7 @@ const router = createRouter({
   routes,
 })
 
-// 路由守卫（开发阶段暂时跳过登录验证）
+// 路由守卫（开发阶段：不校验登录，只做首页重定向）
 router.beforeEach((to, _from, next) => {
   if (to.path === '/') {
     next('/dashboard')

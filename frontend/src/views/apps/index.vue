@@ -12,21 +12,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="apps-page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>应用使用记录</span>
-          <div class="filters">
-            <el-input
-              v-model="searchName"
-              placeholder="搜索应用"
-              clearable
-              style="width: 200px"
-            />
-          </div>
-        </div>
-      </template>
+  <section class="apps-section">
+    <div class="section-header">
+      <h2>应用使用记录</h2>
+      <div class="section-actions">
+        <el-input
+          v-model="searchName"
+          placeholder="搜索应用"
+          clearable
+          style="width: 200px"
+        />
+      </div>
+    </div>
+
+    <div class="table-wrapper">
 
       <el-table :data="appsStore.appList" v-loading="appsStore.loading" stripe>
         <el-table-column prop="app_name" label="应用名称" min-width="150" />
@@ -51,24 +50,46 @@ onMounted(() => {
           @size-change="appsStore.fetchApps()"
         />
       </div>
-    </el-card>
-  </div>
+    </div>
+  </section>
 </template>
 
 <style scoped lang="scss">
-.apps-page {
-  padding: 0;
+.apps-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.card-header {
+.section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+.section-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.table-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .pagination {
-  margin-top: 20px;
+  padding: 16px 20px;
   display: flex;
   justify-content: flex-end;
+  border-top: 1px solid var(--border-subtle);
 }
 </style>

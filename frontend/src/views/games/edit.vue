@@ -1,19 +1,62 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getGameDetail, createGame, updateGame } from '@/api/games'
 
 const route = useRoute()
-const gameId = route.params.id
+const router = useRouter()
+const gameId = route.params.id as string | undefined
 const isEdit = !!gameId
+const loading = ref(false)
 
 const form = ref({
   name: '',
   developer: '',
   publisher: '',
   platform: '',
-  rating: null,
+  rating: null as number | null,
   notes: '',
 })
+
+onMounted(async () => {
+  if (isEdit) {
+    loading.value = true
+    try {
+      const res = await getGameDetail(Number(gameId))
+      if (res) {
+        form.value = { ...res }
+      }
+    } catch (e) {
+      console.error('加载游戏信息失败', e)
+    } finally {
+      loading.value = false
+    }
+  }
+})
+
+async function handleSave() {
+  if (!form.value.name.trim()) {
+    return
+  }
+
+  loading.value = true
+  try {
+    if (isEdit) {
+      await updateGame(Number(gameId), form.value)
+    } else {
+      await createGame(form.value)
+    }
+    router.push('/games')
+  } catch (e) {
+    console.error('保存失败', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleCancel() {
+  router.push('/games')
+}
 </script>
 
 <template>
@@ -22,8 +65,8 @@ const form = ref({
       <template #header>
         <span>{{ isEdit ? '编辑游戏' : '添加游戏' }}</span>
       </template>
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="游戏名称">
+      <el-form :model="form" label-width="100px" @submit.prevent="handleSave">
+        <el-form-item label="游戏名称" required>
           <el-input v-model="form.name" placeholder="请输入游戏名称" />
         </el-form-item>
         <el-form-item label="开发商">
@@ -47,8 +90,10 @@ const form = ref({
           <el-input v-model="form.notes" type="textarea" :rows="4" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary">保存</el-button>
-          <el-button>取消</el-button>
+          <el-button type="primary" :loading="loading" @click="handleSave">
+            保存
+          </el-button>
+          <el-button @click="handleCancel">取消</el-button>
         </el-form-item>
       </el-form>
     </el-card>

@@ -13,7 +13,21 @@ from app.api.v1 import auth, dashboard, apps, games, stats, settings as settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # 启动时创建数据库表
+    # 迁移：添加缺少的字段
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # 检查 exe_path 字段是否存在
+            result = conn.execute(text("PRAGMA table_info(games)"))
+            cols = [row[1] for row in result]
+            if "exe_path" not in cols:
+                conn.execute(text("ALTER TABLE games ADD COLUMN exe_path VARCHAR(500)"))
+                conn.commit()
+                print("数据库迁移: 添加 exe_path 字段")
+    except Exception as e:
+        print(f"数据库迁移跳过: {e}")
+    
+    # 创建数据库表（不覆盖已有表）
     Base.metadata.create_all(bind=engine)
     print("数据库初始化完成")
     yield

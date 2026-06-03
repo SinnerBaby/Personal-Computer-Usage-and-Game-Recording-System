@@ -37,6 +37,7 @@ class GameBase(BaseModel):
     cover_image: Optional[str] = Field(None, description="封面图路径")
     rating: Optional[float] = Field(None, ge=1, le=10, description="个人评分（1-10）")
     notes: Optional[str] = Field(None, description="游玩笔记")
+    exe_path: Optional[str] = Field(None, description="游戏可执行文件路径")
 
 
 class GameCreate(GameBase):
@@ -55,6 +56,7 @@ class GameUpdate(BaseModel):
     cover_image: Optional[str] = Field(None, description="封面图路径")
     rating: Optional[float] = Field(None, ge=1, le=10, description="个人评分（1-10）")
     notes: Optional[str] = Field(None, description="游玩笔记")
+    exe_path: Optional[str] = Field(None, description="游戏可执行文件路径")
     tag_ids: Optional[List[int]] = Field(None, description="标签ID列表")
 
 

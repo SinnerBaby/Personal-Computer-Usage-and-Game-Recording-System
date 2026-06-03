@@ -27,6 +27,7 @@ class Game(Base):
     purchase_price = Column(Float, nullable=True, comment="购买价格")
     purchase_date = Column(Date, nullable=True, comment="购买日期")
     cover_image = Column(String(255), nullable=True, comment="封面图路径")
+    exe_path = Column(String(500), nullable=True, comment="游戏可执行文件路径")
     rating = Column(Float, nullable=True, comment="个人评分（1-10）")
     notes = Column(Text, nullable=True, comment="游玩笔记")
     total_duration = Column(Integer, default=0, comment="总游玩时长（秒）")

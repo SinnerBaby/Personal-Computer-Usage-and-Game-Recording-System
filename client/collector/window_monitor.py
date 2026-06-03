@@ -34,6 +34,7 @@ class WindowMonitor:
                 "process_name": process.name(),
                 "window_title": title,
                 "pid": pid,
+                "exe_path": process.exe(),  # 可执行文件完整路径
             }
         except Exception:
             return None
@@ -57,6 +58,9 @@ class WindowMonitor:
                         "end_time": now.isoformat(),
                         "duration": duration,
                         "is_idle": False,
+                        "is_game": self.current_app.get("is_game", False),
+                        "game_name": self.current_app.get("game_name"),
+                        "exe_path": self.current_app.get("exe_path"),
                     })
                 
                 # 更新当前应用
@@ -83,6 +87,9 @@ class WindowMonitor:
                     "end_time": now.isoformat(),
                     "duration": duration,
                     "is_idle": False,
+                    "is_game": self.current_app.get("is_game", False),
+                    "game_name": self.current_app.get("game_name"),
+                    "exe_path": self.current_app.get("exe_path"),
                 })
                 # 重置当前应用记录
                 self.current_start = now

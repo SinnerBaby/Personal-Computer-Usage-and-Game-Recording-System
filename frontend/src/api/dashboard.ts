@@ -15,3 +15,13 @@ export function getRecentApps(limit: number = 10): Promise<any> {
 export function getRecentGames(limit: number = 5): Promise<any> {
   return request.get('/dashboard/recent-games', { params: { limit } })
 }
+
+export function getUsageTimeline(days: number = 7): Promise<any> {
+  return request.get('/dashboard/usage-timeline', { params: { days } })
+}
+
+export function getGameDailyBreakdown(targetDate?: string): Promise<any> {
+  const params: any = {}
+  if (targetDate) params.target_date = targetDate
+  return request.get('/dashboard/game-breakdown', { params })
+}
